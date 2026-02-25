@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="ro.unitbv.aoc.graphs.view.MainController"
+            prefHeight="600.0" prefWidth="900.0">
+
+    <top>
+        <MenuBar>
+            <Menu text="File">
+                <MenuItem text="Save..." onAction="#onSave"/>
+                <MenuItem text="Load..." onAction="#onLoad"/>
+                <MenuItem text="Exit" onAction="#onExit"/>
+            </Menu>
+            <Menu text="Actions">
+                <MenuItem text="Clear Graph" onAction="#onClear"/>
+                <MenuItem text="Show Stats" onAction="#onStats"/>
+            </Menu>
+        </MenuBar>
+    </top>
+
+    <center>
+        <Pane fx:id="drawingPane" onMouseClicked="#onCanvasClick"
+              style="-fx-background-color: white; -fx-cursor: crosshair;"/>
+    </center>
+
+    <right>
+        <VBox spacing="10" style="-fx-background-color: #f4f4f4; -fx-border-color: #ccc; -fx-padding: 10;" prefWidth="250">
+
+            <Label text="Edge List" style="-fx-font-weight: bold;"/>
+            <!-- The new List View -->
+            <ListView fx:id="edgeListView" VBox.vgrow="ALWAYS"/>
+
+            <Separator />
+
+            <Label fx:id="lblHeader" text="New Edge Properties" style="-fx-font-weight: bold;"/>
+            <Label text="(Values used for next draw)" style="-fx-font-size: 10px; -fx-text-fill: gray;" fx:id="lblSubHeader"/>
+
+            <GridPane hgap="5" vgap="5">
+                <Label text="Weight:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                <TextField fx:id="txtWeight" text="1.0" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                <Label text="Capacity:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                <TextField fx:id="txtCapacity" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                <Label text="Flow:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                <TextField fx:id="txtFlow" text="0.0" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+            </GridPane>
+
+            <CheckBox fx:id="chkDirected" text="Is Directed?" />
+
+            <Button fx:id="btnUpdate" text="Update Selected" onAction="#onUpdateEdge"
+                    maxWidth="Infinity" disable="true"/>
+
+            <Button fx:id="btnDeleteEdge" text="Delete Selected Edge" onAction="#onDeleteEdge"
+                    maxWidth="Infinity" disable="true" style="-fx-text-fill: red;"/>
+
+            <Button text="Deselect" onAction="#onDeselect" maxWidth="Infinity"/>
+        </VBox>
+    </right>
+
+    <bottom>
+        <Label fx:id="lblStatus" style="-fx-padding: 5;"/>
+    </bottom>
+
+</BorderPane>
