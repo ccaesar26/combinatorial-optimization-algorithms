@@ -3,11 +3,14 @@ package ro.unitbv.aoc.graphs.viewmodel;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import ro.unitbv.aoc.graphs.algorithms.GraphAlgo;
 import ro.unitbv.aoc.graphs.business.GraphManager;
 import ro.unitbv.aoc.graphs.model.Edge;
 import ro.unitbv.aoc.graphs.model.Node;
 
 import java.io.File;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MainViewModel {
 
@@ -51,6 +54,29 @@ public class MainViewModel {
             }
             startNode = null; // Reset
         }
+    }
+
+    // --- ALGORITHMS ---
+
+    // 1. Helper to fill the ComboBox in the View
+    public List<String> getNodeIds() {
+        return nodesList.stream().map(Node::id).collect(Collectors.toList());
+    }
+
+    // 2. The Command to run the Scala Algorithm
+    public void runMaxFlowCommand(String sourceId, String sinkId) {
+        if (sourceId == null || sinkId == null || sourceId.equals(sinkId)) {
+            statusText.set("Error: Invalid Source/Sink selection.");
+            return;
+        }
+
+        statusText.set("Running Max Flow (" + sourceId + " -> " + sinkId + ")...");
+
+        // Call SCALA
+        double maxFlow = GraphAlgo.runGenericMaxFlow(graphManager, sourceId, sinkId);
+
+        refreshData(); // To show the flow values on edges
+        statusText.set("Max Flow result: " + maxFlow);
     }
 
     public void selectEdgeCommand(Edge edge) {

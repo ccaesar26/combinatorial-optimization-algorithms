@@ -19,6 +19,11 @@
                 <MenuItem text="Clear Graph" onAction="#onClear"/>
                 <MenuItem text="Show Stats" onAction="#onStats"/>
             </Menu>
+            <Menu text="Algorithms">
+                <MenuItem text="Show Stats" onAction="#onStats"/>
+                <SeparatorMenuItem />
+                <MenuItem text="Max Flow (Generic)" onAction="#onMaxFlow"/>
+            </Menu>
         </MenuBar>
     </top>
 

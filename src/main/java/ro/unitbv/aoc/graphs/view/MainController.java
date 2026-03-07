@@ -1,18 +1,23 @@
 package ro.unitbv.aoc.graphs.view;
 
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
+import javafx.util.Pair;
 import ro.unitbv.aoc.graphs.model.Edge;
 import ro.unitbv.aoc.graphs.model.Node;
 import ro.unitbv.aoc.graphs.viewmodel.MainViewModel;
 
 import java.io.File;
+import java.util.Optional;
 
 public class MainController {
 
@@ -257,4 +262,65 @@ public class MainController {
     @FXML void onClear() { viewModel.clearCommand(); }
     @FXML void onStats() { viewModel.calculateStatsCommand(); }
     @FXML void onExit() { System.exit(0); }
+
+    @FXML
+    public void onMaxFlow() {
+        // 1. Create a Custom Dialog
+        Dialog<Pair<String, String>> dialog = new Dialog<>();
+        dialog.setTitle("Max Flow Algorithm");
+        dialog.setHeaderText("Select Source and Sink nodes");
+
+        // Set the button types (OK and Cancel)
+        ButtonType runButtonType = new ButtonType("Run", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(runButtonType, ButtonType.CANCEL);
+
+        // 2. Create the Layout
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        // 3. Create Dropdowns (ComboBox)
+        ComboBox<String> sourceBox = new ComboBox<>(FXCollections.observableArrayList(viewModel.getNodeIds()));
+        ComboBox<String> sinkBox = new ComboBox<>(FXCollections.observableArrayList(viewModel.getNodeIds()));
+
+        grid.add(new Label("Source:"), 0, 0);
+        grid.add(sourceBox, 1, 0);
+        grid.add(new Label("Sink:"), 0, 1);
+        grid.add(sinkBox, 1, 1);
+
+        dialog.getDialogPane().setContent(grid);
+
+        // 4. Enable/Disable Run button based on selection
+        javafx.scene.Node runButton = dialog.getDialogPane().lookupButton(runButtonType);
+        runButton.setDisable(true);
+
+        // Validation logic
+        Runnable validate = () -> {
+            boolean valid = sourceBox.getValue() != null &&
+                    sinkBox.getValue() != null &&
+                    !sourceBox.getValue().equals(sinkBox.getValue());
+            runButton.setDisable(!valid);
+        };
+
+        sourceBox.valueProperty().addListener((obs, oldVal, newVal) -> validate.run());
+        sinkBox.valueProperty().addListener((obs, oldVal, newVal) -> validate.run());
+
+        // 5. Convert result to a Pair when Run is clicked
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == runButtonType) {
+                return new Pair<>(sourceBox.getValue(), sinkBox.getValue());
+            }
+            return null;
+        });
+
+        // 6. Show Dialog and wait for result
+        Optional<Pair<String, String>> result = dialog.showAndWait();
+
+        // 7. Execute Command if user clicked Run
+        result.ifPresent(pair -> {
+            viewModel.runMaxFlowCommand(pair.getKey(), pair.getValue());
+        });
+    }
+
 }
