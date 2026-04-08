@@ -21,19 +21,30 @@ import java.util.Optional;
 
 public class MainController {
 
-    @FXML private Pane drawingPane;
-    @FXML private Label lblStatus;
+    @FXML
+    private Pane drawingPane;
+    @FXML
+    private Label lblStatus;
 
     // Sidebar Controls
-    @FXML private ListView<Edge> edgeListView;
-    @FXML private TextField txtWeight;
-    @FXML private TextField txtCapacity;
-    @FXML private TextField txtFlow;
-    @FXML private CheckBox chkDirected;
-    @FXML private Button btnUpdate;
-    @FXML private Button btnDeleteEdge;
-    @FXML private Label lblHeader;
-    @FXML private Label lblSubHeader;
+    @FXML
+    private ListView<Edge> edgeListView;
+    @FXML
+    private TextField txtWeight;
+    @FXML
+    private TextField txtCapacity;
+    @FXML
+    private TextField txtFlow;
+    @FXML
+    private CheckBox chkDirected;
+    @FXML
+    private Button btnUpdate;
+    @FXML
+    private Button btnDeleteEdge;
+    @FXML
+    private Label lblHeader;
+    @FXML
+    private Label lblSubHeader;
 
     private MainViewModel viewModel;
 
@@ -82,7 +93,7 @@ public class MainController {
                 lblHeader.setText("Editing Edge");
                 lblSubHeader.setText(newVal.sourceId() + " -> " + newVal.targetId());
                 btnUpdate.setDisable(false);
-                
+
                 // NEW: Enable Delete button
                 btnDeleteEdge.setDisable(false);
 
@@ -131,7 +142,7 @@ public class MainController {
     public void onDeselect() {
         viewModel.selectEdgeCommand(null);
     }
-    
+
     @FXML
     public void onDeleteEdge() {
         viewModel.deleteSelectedEdgeCommand();
@@ -249,38 +260,70 @@ public class MainController {
     }
 
     // Menu Actions same as before...
-    @FXML void onSave() {
+    @FXML
+    void onSave() {
         FileChooser fc = new FileChooser();
         File f = fc.showSaveDialog(drawingPane.getScene().getWindow());
         viewModel.saveGraphCommand(f);
     }
-    @FXML void onLoad() {
+
+    @FXML
+    void onLoad() {
         FileChooser fc = new FileChooser();
         File f = fc.showOpenDialog(drawingPane.getScene().getWindow());
         viewModel.loadGraphCommand(f);
     }
-    @FXML void onClear() { viewModel.clearCommand(); }
-    @FXML void onStats() { viewModel.calculateStatsCommand(); }
-    @FXML void onExit() { System.exit(0); }
+
+    @FXML
+    void onClear() {
+        viewModel.clearCommand();
+    }
+
+    @FXML
+    void onStats() {
+        viewModel.calculateStatsCommand();
+    }
+
+    @FXML
+    void onExit() {
+        System.exit(0);
+    }
 
     @FXML
     public void onMaxFlow() {
-        // 1. Create a Custom Dialog
+        showAlgorithmDialog("Generic Max Flow (GENERIC-FD)", (source, sink) -> {
+            viewModel.runMaxFlowCommand(source, sink);
+        });
+    }
+
+    @FXML
+    public void onFordFulkerson() {
+        showAlgorithmDialog("Ford-Fulkerson de etichetare", (source, sink) -> {
+            viewModel.runFordFulkersonCommand(source, sink);
+        });
+    }
+
+    @FXML
+    public void onEdmondsKarp() {
+        showAlgorithmDialog("Edmonds-Karp Algorithm", (source, sink) -> {
+            viewModel.runEdmondsKarpCommand(source, sink);
+        });
+    }
+
+    // --- REUSABLE POP-UP DIALOG ---
+    private void showAlgorithmDialog(String title, java.util.function.BiConsumer<String, String> onRun) {
         Dialog<Pair<String, String>> dialog = new Dialog<>();
-        dialog.setTitle("Max Flow Algorithm");
+        dialog.setTitle(title);
         dialog.setHeaderText("Select Source and Sink nodes");
 
-        // Set the button types (OK and Cancel)
         ButtonType runButtonType = new ButtonType("Run", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(runButtonType, ButtonType.CANCEL);
 
-        // 2. Create the Layout
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
+        grid.setPadding(new javafx.geometry.Insets(20, 150, 10, 10));
 
-        // 3. Create Dropdowns (ComboBox)
         ComboBox<String> sourceBox = new ComboBox<>(FXCollections.observableArrayList(viewModel.getNodeIds()));
         ComboBox<String> sinkBox = new ComboBox<>(FXCollections.observableArrayList(viewModel.getNodeIds()));
 
@@ -291,11 +334,9 @@ public class MainController {
 
         dialog.getDialogPane().setContent(grid);
 
-        // 4. Enable/Disable Run button based on selection
         javafx.scene.Node runButton = dialog.getDialogPane().lookupButton(runButtonType);
         runButton.setDisable(true);
 
-        // Validation logic
         Runnable validate = () -> {
             boolean valid = sourceBox.getValue() != null &&
                     sinkBox.getValue() != null &&
@@ -306,7 +347,6 @@ public class MainController {
         sourceBox.valueProperty().addListener((obs, oldVal, newVal) -> validate.run());
         sinkBox.valueProperty().addListener((obs, oldVal, newVal) -> validate.run());
 
-        // 5. Convert result to a Pair when Run is clicked
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == runButtonType) {
                 return new Pair<>(sourceBox.getValue(), sinkBox.getValue());
@@ -314,13 +354,7 @@ public class MainController {
             return null;
         });
 
-        // 6. Show Dialog and wait for result
-        Optional<Pair<String, String>> result = dialog.showAndWait();
-
-        // 7. Execute Command if user clicked Run
-        result.ifPresent(pair -> {
-            viewModel.runMaxFlowCommand(pair.getKey(), pair.getValue());
-        });
+        dialog.showAndWait().ifPresent(pair -> onRun.accept(pair.getKey(), pair.getValue()));
     }
 
 }

@@ -22,7 +22,9 @@
             <Menu text="Algorithms">
                 <MenuItem text="Show Stats" onAction="#onStats"/>
                 <SeparatorMenuItem />
-                <MenuItem text="Max Flow (Generic)" onAction="#onMaxFlow"/>
+                <MenuItem text="Generic Max Flow (GENERIC-FD)" onAction="#onMaxFlow"/>
+                <MenuItem text="Edmonds-Karp" onAction="#onEdmondsKarp"/>
+                <MenuItem text="Ford-Fulkerson (Etichetare)" onAction="#onFordFulkerson"/>
             </Menu>
         </MenuBar>
     </top>

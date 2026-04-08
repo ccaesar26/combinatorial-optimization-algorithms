@@ -64,19 +64,48 @@ public class MainViewModel {
     }
 
     // 2. The Command to run the Scala Algorithm
+    public void runEdmondsKarpCommand(String sourceId, String sinkId) {
+        if (sourceId == null || sinkId == null || sourceId.equals(sinkId)) {
+            statusText.set("Error: Invalid Source/Sink selection.");
+            return;
+        }
+
+        statusText.set("Running Edmonds-Karp (" + sourceId + " -> " + sinkId + ")...");
+
+        // Call SCALA
+        double maxFlow = GraphAlgo.runEdmondsKarp(graphManager, sourceId, sinkId);
+
+        refreshData(); // To show the flow values on edges
+        statusText.set("Edmonds-Karp result: " + maxFlow);
+    }
     public void runMaxFlowCommand(String sourceId, String sinkId) {
         if (sourceId == null || sinkId == null || sourceId.equals(sinkId)) {
             statusText.set("Error: Invalid Source/Sink selection.");
             return;
         }
 
-        statusText.set("Running Max Flow (" + sourceId + " -> " + sinkId + ")...");
+        statusText.set("Running Generic Max Flow (" + sourceId + " -> " + sinkId + ")...");
 
         // Call SCALA
         double maxFlow = GraphAlgo.runGenericMaxFlow(graphManager, sourceId, sinkId);
 
         refreshData(); // To show the flow values on edges
-        statusText.set("Max Flow result: " + maxFlow);
+        statusText.set("Generic Max Flow result: " + maxFlow);
+    }
+
+    public void runFordFulkersonCommand(String sourceId, String sinkId) {
+        if (sourceId == null || sinkId == null || sourceId.equals(sinkId)) {
+            statusText.set("Error: Invalid Source/Sink selection.");
+            return;
+        }
+
+        statusText.set("Running Ford-Fulkerson (" + sourceId + " -> " + sinkId + ")...");
+
+        // Call the new Scala method
+        double maxFlow = GraphAlgo.runFordFulkerson(graphManager, sourceId, sinkId);
+
+        refreshData();
+        statusText.set("Ford-Fulkerson Max Flow result: " + maxFlow);
     }
 
     public void selectEdgeCommand(Edge edge) {
