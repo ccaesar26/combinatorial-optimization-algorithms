@@ -310,6 +310,20 @@ public class MainController {
         });
     }
 
+    @FXML
+    public void onGabow() {
+        showAlgorithmDialog("Gabow Bit-Scaling Algorithm", (source, sink) -> {
+            viewModel.runGabowCommand(source, sink);
+        });
+    }
+
+    @FXML
+    public void onAhujaOrlin() {
+        showAlgorithmDialog("Ahuja-Orlin Capacity-Scaling Algorithm", (source, sink) -> {
+            viewModel.runAhujaOrlinCommand(source, sink);
+        });
+    }
+
     // --- REUSABLE POP-UP DIALOG ---
     private void showAlgorithmDialog(String title, java.util.function.BiConsumer<String, String> onRun) {
         Dialog<Pair<String, String>> dialog = new Dialog<>();

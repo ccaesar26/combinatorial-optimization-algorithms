@@ -25,6 +25,8 @@
                 <MenuItem text="Generic Max Flow (GENERIC-FD)" onAction="#onMaxFlow"/>
                 <MenuItem text="Edmonds-Karp" onAction="#onEdmondsKarp"/>
                 <MenuItem text="Ford-Fulkerson (Etichetare)" onAction="#onFordFulkerson"/>
+                <MenuItem text="Gabow Bit-Scaling" onAction="#onGabow"/>
+                <MenuItem text="Ahuja-Orlin Capacity-Scaling" onAction="#onAhujaOrlin"/>
             </Menu>
         </MenuBar>
     </top>

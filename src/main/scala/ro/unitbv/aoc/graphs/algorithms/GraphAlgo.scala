@@ -4,7 +4,7 @@ import ro.unitbv.aoc.graphs.business.GraphManager
 import ro.unitbv.aoc.graphs.model.{Edge, Node}
 
 import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ListBuffer, Map, Queue}
 import scala.util.Random
 
@@ -327,5 +327,230 @@ object GraphAlgo {
     }
 
     totalFlow
+  }
+
+  /**
+   * Gabow's bit-scaling max-flow algorithm.
+   *
+   * Algorithm:
+   *   1. Save original capacities.
+   *   2. Repeatedly halve all capacities until every edge has capacity ≤ 1.
+   *   3. At the base level (all capacities ≤ 1) compute max flow using
+   *      random DFS augmenting paths.
+   *   4. Move one level up: set starting flow = 2 × previous flow,
+   *      then find augmenting paths on the residual network.
+   *   5. Repeat step 4 until reaching the original network.
+   */
+  def runGabow(manager: GraphManager, s: String, t: String): Double = {
+    import scala.jdk.CollectionConverters._
+    val allEdges = manager.getEdgesJava.asScala.toList
+
+    // 1. Save original capacities
+    val originalCaps: immutable.Map[String, Double] = allEdges.map { e =>
+      edgeKey(e.sourceId, e.targetId) -> e.capacity
+    }.toMap
+
+    val maxCap = if (originalCaps.isEmpty) 0.0 else originalCaps.values.max
+    if (maxCap == 0) return 0.0
+
+    // 2. Build the sequence of divisors: [1, 2, 4, …] until max_cap / d <= 1
+    val divisors = ListBuffer[Int](1)
+    var d = 1
+    while (maxCap / d > 1) {
+      d *= 2
+      divisors += d
+    }
+    // divisors is [1, 2, 4, …, largest]
+
+    val k = divisors.size
+
+    // 3. Process levels from smallest capacities (largest divisor) to original (divisor=1)
+    val processingOrder = divisors.reverse
+
+    for ((divisor, procIdx) <- processingOrder.zipWithIndex) {
+      val isBase = procIdx == 0
+
+      // a. Set scaled capacities
+      for (edge <- allEdges) {
+        val origCap = originalCaps.getOrElse(edgeKey(edge.sourceId, edge.targetId), 0.0)
+        edge.capacity = Math.floor(origCap / divisor)
+      }
+
+      // b. Set starting flows
+      if (isBase) {
+        // Base level: all flows start at 0
+        allEdges.foreach(_.flow = 0.0)
+      } else {
+        // Double flows from the previous level, clamped to new capacity
+        for (edge <- allEdges) {
+          val doubled = edge.flow * 2
+          edge.flow = Math.min(doubled, edge.capacity)
+        }
+      }
+
+      // c. Run augmenting-path loop (random DFS, same as Generic max-flow)
+      var pathFound = true
+      while (pathFound) {
+        val path = findAugmentingPathRandomDFS(allEdges, s, t)
+        path match {
+          case Some(steps) =>
+            // Compute bottleneck
+            var minResidual = Double.MaxValue
+            for (step <- steps) {
+              val residualCap = if (step.isForward) {
+                step.edge.capacity - step.edge.flow
+              } else {
+                step.edge.flow
+              }
+              minResidual = Math.min(minResidual, residualCap)
+            }
+
+            // Augment flow
+            for (step <- steps) {
+              if (step.isForward) {
+                step.edge.flow += minResidual
+              } else {
+                step.edge.flow -= minResidual
+              }
+            }
+
+          case None =>
+            pathFound = false
+        }
+      }
+    }
+
+    // 4. Compute total flow = sum of flows leaving source
+    allEdges.filter(_.sourceId == s).map(_.flow).sum
+  }
+
+  /** Helper to create a consistent key for an edge. */
+  private def edgeKey(src: String, tgt: String): String = s"$src->$tgt"
+
+  /**
+   * Ahuja-Orlin capacity-scaling max-flow algorithm (GENERIC-SCALE).
+   *
+   * Algorithm:
+   *   1. delta := largest power of 2 ≤ max capacity
+   *   2. While delta >= 1:
+   *        a. Build delta-residual graph: only edges with r(u,v) >= delta
+   *        b. While an augmenting path exists in the delta-residual graph:
+   *             - Find path using random DFS on delta-filtered edges
+   *             - Augment flow along the path
+   *        c. delta = delta / 2
+   */
+  def runAhujaOrlin(manager: GraphManager, s: String, t: String): Double = {
+    import scala.jdk.CollectionConverters._
+    val allEdges = manager.getEdgesJava.asScala.toList
+
+    // Reset all flows to 0
+    allEdges.foreach(_.flow = 0.0)
+
+    // Find max capacity across all edges
+    val maxCap = if (allEdges.isEmpty) 0.0 else allEdges.map(_.capacity).max
+    if (maxCap == 0) return 0.0
+
+    // 1. delta := largest power of 2 <= max capacity
+    var delta = 1.0
+    while (delta * 2 <= maxCap) {
+      delta *= 2
+    }
+
+    var totalFlow = 0.0
+
+    // 2. While delta >= 1
+    while (delta >= 1) {
+
+      // b. While an augmenting path exists in the delta-residual graph
+      var pathFound = true
+      while (pathFound) {
+        // Find augmenting path restricted to edges with residual >= delta
+        val path = findAugmentingPathDeltaFiltered(allEdges, s, t, delta)
+
+        path match {
+          case Some(steps) =>
+            // Compute bottleneck
+            var minResidual = Double.MaxValue
+            for (step <- steps) {
+              val residualCap = if (step.isForward) {
+                step.edge.capacity - step.edge.flow
+              } else {
+                step.edge.flow
+              }
+              minResidual = Math.min(minResidual, residualCap)
+            }
+
+            // Augment flow along the path
+            for (step <- steps) {
+              if (step.isForward) {
+                step.edge.flow += minResidual
+              } else {
+                step.edge.flow -= minResidual
+              }
+            }
+
+            totalFlow += minResidual
+
+          case None =>
+            pathFound = false
+        }
+      }
+
+      // c. delta = delta / 2
+      delta = Math.floor(delta / 2)
+    }
+
+    totalFlow
+  }
+
+  /**
+   * Random DFS augmenting-path search restricted to edges with residual capacity >= delta.
+   * Returns Some(list of ResidualStep) if a path is found, None otherwise.
+   */
+  private def findAugmentingPathDeltaFiltered(
+    allEdges: List[Edge],
+    s: String,
+    t: String,
+    delta: Double
+  ): Option[List[ResidualStep]] = {
+
+    val random = new Random()
+
+    def dfs(current: String, visited: mutable.Set[String], path: List[ResidualStep]): Option[List[ResidualStep]] = {
+      if (current == t) return Some(path)
+
+      val neighbours = ListBuffer[(String, ResidualStep)]()
+
+      for (edge <- allEdges) {
+        // Forward edge: current -> targetId, only if residual >= delta
+        if (edge.sourceId == current && !visited.contains(edge.targetId)) {
+          val residual = edge.capacity - edge.flow
+          if (residual >= delta) {
+            neighbours += ((edge.targetId, ResidualStep(current, edge.targetId, edge, isForward = true)))
+          }
+        }
+        // Backward edge: current -> sourceId, only if flow >= delta
+        if (edge.targetId == current && !visited.contains(edge.sourceId)) {
+          val residual = edge.flow
+          if (residual >= delta) {
+            neighbours += ((edge.sourceId, ResidualStep(current, edge.sourceId, edge, isForward = false)))
+          }
+        }
+      }
+
+      val shuffled = random.shuffle(neighbours)
+
+      for ((neighbour, step) <- shuffled) {
+        visited.add(neighbour)
+        val result = dfs(neighbour, visited, path :+ step)
+        if (result.isDefined) return result
+        visited.remove(neighbour)
+      }
+
+      None
+    }
+
+    val visited = mutable.Set[String](s)
+    dfs(s, visited, List.empty)
   }
 }

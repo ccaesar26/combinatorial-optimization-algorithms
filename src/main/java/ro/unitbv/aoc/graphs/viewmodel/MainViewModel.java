@@ -108,6 +108,34 @@ public class MainViewModel {
         statusText.set("Ford-Fulkerson Max Flow result: " + maxFlow);
     }
 
+    public void runGabowCommand(String sourceId, String sinkId) {
+        if (sourceId == null || sinkId == null || sourceId.equals(sinkId)) {
+            statusText.set("Error: Invalid Source/Sink selection.");
+            return;
+        }
+
+        statusText.set("Running Gabow Bit-Scaling (" + sourceId + " -> " + sinkId + ")...");
+
+        double maxFlow = GraphAlgo.runGabow(graphManager, sourceId, sinkId);
+
+        refreshData();
+        statusText.set("Gabow Bit-Scaling result: " + maxFlow);
+    }
+
+    public void runAhujaOrlinCommand(String sourceId, String sinkId) {
+        if (sourceId == null || sinkId == null || sourceId.equals(sinkId)) {
+            statusText.set("Error: Invalid Source/Sink selection.");
+            return;
+        }
+
+        statusText.set("Running Ahuja-Orlin (" + sourceId + " -> " + sinkId + ")...");
+
+        double maxFlow = GraphAlgo.runAhujaOrlin(graphManager, sourceId, sinkId);
+
+        refreshData();
+        statusText.set("Ahuja-Orlin Capacity-Scaling result: " + maxFlow);
+    }
+
     public void selectEdgeCommand(Edge edge) {
         selectedEdge.set(edge);
         if (edge != null) {
